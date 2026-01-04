@@ -53,7 +53,24 @@ namespace ViewModel
 
         protected override void CreateInsertdSQL(BaseEntity entity, OleDbCommand cmd)
         {
-            throw new NotImplementedException();
+            Preferences p = entity as Preferences;
+            if (p != null)
+            {
+                // Removed ID from the list because Access handles AutoNumbers automatically
+                string sqlStr = "INSERT INTO Preferences (UserID,PreferredGender, AgeMin, AgeMax, DistanceMax) " +
+                                " VALUES (@UserID, @PreferredGender, @AgeMin, @AgeMax, @DistanceMax)";
+
+                cmd.CommandText = sqlStr;
+                cmd.Parameters.Clear();
+
+                // Parameters must be in the exact order they appear in the SQL string above
+                cmd.Parameters.Add(new OleDbParameter("@UserID", p.User.Id));
+                cmd.Parameters.Add(new OleDbParameter("@PreferredGender", p.PreferredGender.Id));
+                cmd.Parameters.Add(new OleDbParameter("@AgeMin", p.MinAge));
+                cmd.Parameters.Add(new OleDbParameter("@AgeMax", p.MaxAge)); // Ensure this is an Integer
+                cmd.Parameters.Add(new OleDbParameter("@DistanceMax", p.MaxDistanceKm)); // Ensure this is an Integer
+           
+            }
         }
 
         protected override void CreateUpdatedSQL(BaseEntity entity, OleDbCommand cmd)

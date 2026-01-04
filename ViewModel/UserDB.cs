@@ -63,7 +63,7 @@ namespace ViewModel
             {
                 // Removed ID from the list because Access handles AutoNumbers automatically
                 string sqlStr = "INSERT INTO [User] (Username, Email, [Password], Gender, DateOfBirth, City, Bio, CreatedAt, Age) " +
-                                "VALUES (@Username, @Email, @Password, @Gender, @DateOfBirth, @City, @Bio, @CreatedAt, @Age)";
+                                " VALUES (@Username, @Email, @Password, @Gender, @DateOfBirth, @City, @Bio, @CreatedAt, @Age)";
 
                 cmd.CommandText = sqlStr;
                 cmd.Parameters.Clear();
@@ -73,10 +73,17 @@ namespace ViewModel
                 cmd.Parameters.Add(new OleDbParameter("@Email", p.Email));
                 cmd.Parameters.Add(new OleDbParameter("@Password", p.Password));
                 cmd.Parameters.Add(new OleDbParameter("@Gender", p.Gender.Id)); // Ensure this is an Integer
-                cmd.Parameters.Add(new OleDbParameter("@DateOfBirth", p.DateOfBirth)); // Ensure this is a DateTime
-                cmd.Parameters.Add(new OleDbParameter("@City", p.City.Id)); // Ensure this is an Integer
+                OleDbParameter dateParam = new OleDbParameter("@DateOfBirth", OleDbType.DBDate);
+                dateParam.Value = p.DateOfBirth;
+                cmd.Parameters.Add(dateParam);
+                
+                
+                 cmd.Parameters.Add(new OleDbParameter("@City", p.City.Id)); // Ensure this is an Integer
                 cmd.Parameters.Add(new OleDbParameter("@Bio", p.Bio));
-                cmd.Parameters.Add(new OleDbParameter("@CreatedAt", p.CreatedAt));
+                OleDbParameter dateParam1 = new OleDbParameter("@CreatedAt", OleDbType.DBDate);
+                dateParam1.Value = p.CreatedAt;
+                cmd.Parameters.Add(dateParam1);
+                //  cmd.Parameters.Add(new OleDbParameter("@CreatedAt", p.CreatedAt));
                 cmd.Parameters.Add(new OleDbParameter("@Age", p.Age));
             }
         }

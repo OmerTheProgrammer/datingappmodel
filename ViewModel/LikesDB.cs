@@ -50,7 +50,22 @@ namespace ViewModel
 
         protected override void CreateInsertdSQL(BaseEntity entity, OleDbCommand cmd)
         {
-            throw new NotImplementedException();
+            Likes p = entity as Likes;
+            if (p != null)
+            {
+                // Removed ID from the list because Access handles AutoNumbers automatically
+                string sqlStr = "INSERT INTO Likes (LikerID, LikedID ) " +
+                                " VALUES (@LikerID, @LikedID)";
+
+                cmd.CommandText = sqlStr;
+                cmd.Parameters.Clear();
+
+                // Parameters must be in the exact order they appear in the SQL string above
+                cmd.Parameters.Add(new OleDbParameter("@LikerID", p.Liker.Id));
+                cmd.Parameters.Add(new OleDbParameter("@LikedID", p.LikedUser.Id));
+               
+
+            }
         }
 
         protected override void CreateUpdatedSQL(BaseEntity entity, OleDbCommand cmd)

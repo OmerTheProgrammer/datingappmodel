@@ -53,7 +53,24 @@ namespace ViewModel
 
         protected override void CreateInsertdSQL(BaseEntity entity, OleDbCommand cmd)
         {
-            throw new NotImplementedException();
+            Messages p = entity as Messages;
+            if (p != null)
+            {
+                // Removed ID from the list because Access handles AutoNumbers automatically
+                string sqlStr = "INSERT INTO Messages (MatchID, SenderID, MessageText, SentAt) " +
+                                " VALUES (@MatchID, @SenderID, @MessageText, @SentAt)";
+
+                cmd.CommandText = sqlStr;
+                cmd.Parameters.Clear();
+
+                // Parameters must be in the exact order they appear in the SQL string above
+                cmd.Parameters.Add(new OleDbParameter("@MatchID", p.Match.Id));
+                cmd.Parameters.Add(new OleDbParameter("@SenderID", p.Sender.Id));
+                cmd.Parameters.Add(new OleDbParameter("@MessageText", p.MessageText));
+                OleDbParameter dateParam = new OleDbParameter("@SentAt", OleDbType.DBDate);
+                dateParam.Value = p.SentAt;
+                cmd.Parameters.Add(dateParam);
+            }
         }
 
         protected override void CreateUpdatedSQL(BaseEntity entity, OleDbCommand cmd)

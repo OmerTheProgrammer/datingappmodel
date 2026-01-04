@@ -51,7 +51,22 @@ namespace ViewModel
 
         protected override void CreateInsertdSQL(BaseEntity entity, OleDbCommand cmd)
         {
-            throw new NotImplementedException();
+            DistanceBetweenCities p = entity as DistanceBetweenCities;
+            if (p != null)
+            {
+                // Removed ID from the list because Access handles AutoNumbers automatically
+                string sqlStr = "INSERT INTO DistanceBetweenCities (City1, City2, KM ) " +
+                                " VALUES (@City1, @City2, @KM)";
+
+                cmd.CommandText = sqlStr;
+                cmd.Parameters.Clear();
+
+                // Parameters must be in the exact order they appear in the SQL string above
+                cmd.Parameters.Add(new OleDbParameter("@City1", p.City1.Id));
+                cmd.Parameters.Add(new OleDbParameter("@City2", p.City2.Id));
+                cmd.Parameters.Add(new OleDbParameter("@KM", p.DistanceKm));
+       
+            }
         }
 
         protected override void CreateUpdatedSQL(BaseEntity entity, OleDbCommand cmd)

@@ -281,28 +281,108 @@ namespace TestViewModel
 
             }
 
-            udb = new();
-            UserList uList1 = udb.SelectAll();
-            foreach (User u in uList1)
-                Console.WriteLine(u.Username);
+            Console.BackgroundColor = ConsoleColor.Green;
 
-            User userToInsert = uList[0];
-            userToInsert.City = cList.First();
-            userToInsert.Age = 69;
-            userToInsert.Bio = "pdiddy is my idol";
-            userToInsert.Email = "mari3@gmail.com";
-            userToInsert.Username = "limon4";
-            userToInsert.Password = "limon5757";
-            userToInsert.CreatedAt = DateTime.Now;
-            userToInsert.DateOfBirth = DateTime.Now;
-            userToInsert.Gender = gList.Last();
-            udb.Insert(userToInsert);
-            x = udb.SaveChanges();
-            Console.WriteLine(System.IO.Path.GetFullPath("YourDatabaseName.accdb"));
-            Console.WriteLine($"{x} rows were updated");
-            uList1 = udb.SelectAll();
-            foreach (User u in uList1)
-                Console.WriteLine(u.Username);
+            City c1 = new City()
+            {
+                Name = "Kiryat Shmona"
+            };
+            cdb.Insert(c1);
+            x = cdb.SaveChanges();
+            Console.WriteLine($"city added {x}  rows" + " : " + c1.Name);
+
+            Gender g1 = new Gender()
+            {
+                Name = "Genderfluid"
+            };
+            gdb.Insert(g1);
+            x = gdb.SaveChanges();
+            Console.WriteLine($"gender added {x}  rows" + " : " + g1.Name);
+
+            Random rand = new Random();
+            User u1 = new User()
+            {
+                Age = 20,
+                City = cList[2],
+                Bio = "im new",
+                CreatedAt = DateTime.Now,
+                DateOfBirth = DateTime.Now.AddYears(rand.Next(10, 30)),
+                Email = "cat1234@gmail.com",
+                Gender = gList[0],
+                Password = "lalala",
+                Username = "johnny11111"
+            };
+            udb.Insert(u1);
+            x=udb.SaveChanges();
+            Console.WriteLine($"user added {x}  rows"+" : "+u1.Username);
+
+            DistanceBetweenCities d1 = new DistanceBetweenCities()
+            {
+                City1 = cList.Last(),
+                City2 = cList[0],
+                DistanceKm = 195
+            };
+            ddb.Insert(d1);
+            x = ddb.SaveChanges();
+            Console.WriteLine($"distance between cities added {x}  rows" + " : " + d1.DistanceKm);
+
+            Likes l1 = new Likes()
+            {
+                Liker = uList[1],
+                LikedUser = uList.Last(),
+                
+            };
+            ldb.Insert(l1);
+            x = ldb.SaveChanges();
+            Console.WriteLine($"likes added {x}  rows" + " : " + l1.Liker+" liked "+ l1.LikedUser);
+
+            Matches m1 = new Matches()
+            {
+                User1 = uList[1],
+                User2 = uList.Last(),
+
+            };
+            mdb.Insert(m1);
+            x = mdb.SaveChanges();
+            Console.WriteLine($"matches added {x}  rows" + " : " + m1.User1 + " and " + m1.User2
+                +" are a match!");
+
+            Random rand1 = new Random();
+            Messages me1 = new Messages()
+            {
+                 Match=mList.Last(),
+                 Sender=uList.Last(),
+                 MessageText="HELLO PRETTY",
+                SentAt = DateTime.Now.AddMinutes(rand1.Next(10, 30)),
+                
+            };
+            medb.Insert(me1);
+            x = medb.SaveChanges();
+            Console.WriteLine($"messages added {x}  rows" + " : " + me1.MessageText);
+
+            Photos ph1 = new Photos()
+            {
+                User = uList[2],
+                 Url="cat2.jpg",
+
+            };
+            phdb.Insert(ph1);
+            x = phdb.SaveChanges();
+            Console.WriteLine($"photos added {x}  rows" + " : " + ph1.User.Username + " added " + ph1.Url);
+
+            Preferences p1 = new Preferences()
+            {
+                User = uList.Last(),
+                PreferredGender = gList[2],
+                MinAge = 19,
+                MaxAge=69,
+                 MaxDistanceKm=196,
+
+            };
+            pdb.Insert(p1);
+            x = pdb.SaveChanges();
+            Console.WriteLine($"preferences added {x}  rows" + " : " + p1.User.Username + " prefernces are:  " + p1.PreferredGender+ " "
+                +p1.MaxDistanceKm+" "+ p1.MinAge+" "+p1.MaxAge);
         }
     }
 }

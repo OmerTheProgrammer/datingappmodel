@@ -3,8 +3,7 @@ using ModelDates;
 using System;
 using System.Buffers;
 using System.ComponentModel.DataAnnotations;
-using ViewModel;
-namespace TestViewModel
+namespace ViewModel
 {
     internal class Program
     {
