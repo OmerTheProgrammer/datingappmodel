@@ -50,10 +50,47 @@ namespace ViewModel
             User u = list.Find(item => item.Id == id);
             return u;
         }
+        public virtual void Delete(BaseEntity entity)
+        {
+            BaseEntity reqEntity = this.NewEntity();
+            LikesDB lDB = new LikesDB();
 
+            var lList = (List<Likes>)lDB.SelectAll().FindAll(x => x.Liker.Id == entity.Id || x.LikedUser.Id == entity.Id);
+
+            foreach (Likes l in lList)
+            {
+                lDB.Delete(l);
+            }
+            lDB.SaveChanges();
+            if (entity != null & entity.GetType() == reqEntity.GetType())
+            {
+                deleted.Add(new ChangeEntity(this.CreateDeletedSQL, entity));
+            }
+
+            BaseEntity reqEntity1 = this.NewEntity();
+            MatchesDB mDB = new MatchesDB();
+
+            var mList = (List<Matches>)mDB.SelectAll().FindAll(x => x.User1.Id == entity.Id || x.User2.Id == entity.Id);
+
+            foreach (Matches m in mList)
+            {
+                mDB.Delete(m);
+            }
+            mDB.SaveChanges();
+            if (entity != null & entity.GetType() == reqEntity1.GetType())
+            {
+                deleted.Add(new ChangeEntity(this.CreateDeletedSQL, entity));
+            }
+        } 
         protected override void CreateDeletedSQL(BaseEntity entity, OleDbCommand cmd)
         {
-            throw new NotImplementedException();
+            User c = entity as User;
+            if (c != null)
+            {
+                string sqlStr = $"DELETE FROM [User] where id=@pid";
+                command.CommandText = sqlStr;
+                command.Parameters.Add(new OleDbParameter("@pid", c.Id));
+            }
         }
 
         protected override void CreateInsertdSQL(BaseEntity entity, OleDbCommand cmd)
@@ -62,8 +99,8 @@ namespace ViewModel
             if (p != null)
             {
                 // Removed ID from the list because Access handles AutoNumbers automatically
-                string sqlStr = "INSERT INTO [User] (Username, Email, [Password], Gender, DateOfBirth, City, Bio, CreatedAt, Age) " +
-                                " VALUES (@Username, @Email, @Password, @Gender, @DateOfBirth, @City, @Bio, @CreatedAt, @Age)";
+                string sqlStr = "INSERT INTO [User] (Username, Email, [Password], Gender, DateOfBirth, City, Bio,ProfilePic, CreatedAt, Age) " +
+                                " VALUES (@Username, @Email, @Password, @Gender, @DateOfBirth, @City, @Bio,@pPic, @CreatedAt, @Age)";
 
                 cmd.CommandText = sqlStr;
                 cmd.Parameters.Clear();
@@ -78,8 +115,9 @@ namespace ViewModel
                 cmd.Parameters.Add(dateParam);
                 
                 
-                 cmd.Parameters.Add(new OleDbParameter("@City", p.City.Id)); // Ensure this is an Integer
+                cmd.Parameters.Add(new OleDbParameter("@City", p.City.Id)); // Ensure this is an Integer
                 cmd.Parameters.Add(new OleDbParameter("@Bio", p.Bio));
+                cmd.Parameters.Add(new OleDbParameter("@pPic", ""));
                 OleDbParameter dateParam1 = new OleDbParameter("@CreatedAt", OleDbType.DBDate);
                 dateParam1.Value = p.CreatedAt;
                 cmd.Parameters.Add(dateParam1);

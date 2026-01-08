@@ -3,6 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.Data.OleDb;
 using System.Linq;
+using System.Security.Cryptography;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -44,6 +45,33 @@ namespace ViewModel
 
                 // 2. Queue the update for the User table (the base class)
                 updated.Add(new ChangeEntity(base.CreateUpdatedSQL, entity));
+            }
+        }
+        public override void Insert(BaseEntity entity)
+        {
+            Manager man = entity as Manager;
+            if (man != null)
+            {
+                
+
+               
+                inserted.Add(new ChangeEntity(base.CreateInsertdSQL, entity));
+
+                inserted.Add(new ChangeEntity(this.CreateInsertdSQL, entity));
+            }
+        }
+
+        protected override void CreateInsertdSQL(BaseEntity entity, OleDbCommand command)
+        {
+            Manager man = entity as Manager;
+            if (man != null)
+            {
+                // The SQL command for your Manager-specific fields
+                string sqlStr = "INSERT INTO Manager (Pass, ID) VALUES (@pass, @pid)"; 
+
+                command.CommandText = sqlStr;
+                command.Parameters.Add(new OleDbParameter("@pass", man.MangPassword));
+                command.Parameters.Add(new OleDbParameter("@pid", man.Id));
             }
         }
 

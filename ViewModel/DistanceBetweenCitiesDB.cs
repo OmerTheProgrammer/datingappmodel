@@ -46,7 +46,14 @@ namespace ViewModel
 
         protected override void CreateDeletedSQL(BaseEntity entity, OleDbCommand cmd)
         {
-            throw new NotImplementedException();
+            DistanceBetweenCities c = entity as DistanceBetweenCities;
+            if (c != null)
+            {
+                string sqlStr = $"DELETE FROM DistanceBetweenCities where id=@pid";
+                command.CommandText = sqlStr;
+                command.Parameters.Add(new OleDbParameter("@pid", c.Id));
+            }
+            
         }
 
         protected override void CreateInsertdSQL(BaseEntity entity, OleDbCommand cmd)

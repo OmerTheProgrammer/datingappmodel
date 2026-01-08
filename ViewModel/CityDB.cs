@@ -42,10 +42,33 @@ namespace ViewModel
             City g = list.Find(item => item.Id == id);
             return g;
         }
+        public virtual void Delete(BaseEntity entity)
+        {
+            BaseEntity reqEntity = this.NewEntity();
+            DistanceBetweenCitiesDB dbcDB=new DistanceBetweenCitiesDB();
+           
+            var dbcList = (List<DistanceBetweenCities>) dbcDB.SelectAll().FindAll(x => x.City1.Id==entity.Id || x.City2.Id==entity.Id);
+
+            foreach (DistanceBetweenCities d in dbcList)
+            {
+                dbcDB.Delete(d);
+            }
+            dbcDB.SaveChanges();
+            if (entity != null & entity.GetType() == reqEntity.GetType())
+            {
+                deleted.Add(new ChangeEntity(this.CreateDeletedSQL, entity));
+            }
+        }
 
         protected override void CreateDeletedSQL(BaseEntity entity, OleDbCommand cmd)
         {
-            throw new NotImplementedException();
+            City c = entity as City;
+            if (c != null)
+            {
+                string sqlStr = $"DELETE FROM City where id=@pid";
+                command.CommandText = sqlStr;
+                command.Parameters.Add(new OleDbParameter("@pid", c.Id));
+            }
         }
 
         protected override void CreateInsertdSQL(BaseEntity entity, OleDbCommand cmd)

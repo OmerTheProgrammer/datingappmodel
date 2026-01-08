@@ -383,6 +383,37 @@ namespace TestViewModel
             x = pdb.SaveChanges();
             Console.WriteLine($"preferences added {x}  rows" + " : " + p1.User.Username + " prefernces are:  " + p1.PreferredGender+ " "
                 +p1.MaxDistanceKm+" "+ p1.MinAge+" "+p1.MaxAge);
+
+            Manager man1 = new Manager()
+            {
+                Username = "Yosi",
+                Bio = "im the new manager",
+                City = cList[3],
+                Age = 24,
+                CreatedAt = DateTime.Now,
+                DateOfBirth = DateTime.Now.AddYears(rand1.Next(10, 30)),
+                Email = "manager123@gmail.com",
+                Gender = gList[1],
+                MangPassword = "manager089",
+                Password = "notmanager089"
+            };
+            mandb.Insert(man1);
+            x = mandb.SaveChanges();
+            Console.WriteLine($"manager added {x}  rows" + " : " + man1.Username + "   " + man1.Gender + " "
+                + man1.City + " " + man1.Age + " " + man1.CreatedAt+" "+ man1.DateOfBirth+" "+ man1.Email+" "+
+                man1.MangPassword+" "+man1.Password);
+
+            Console.BackgroundColor = ConsoleColor.Gray;
+            Console.ForegroundColor = ConsoleColor.Red;
+            //City c2 = cList[0];
+            //cdb.Delete(c2);
+            //x = cdb.SaveChanges();
+            //Console.WriteLine($"city deleted {x}  rows"); 
+
+            User u2 = uList[0];
+            udb.Delete(u2);
+            x = udb.SaveChanges();
+            Console.WriteLine($"user deleted {x}  rows");
         }
     }
 }
