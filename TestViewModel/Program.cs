@@ -410,10 +410,10 @@ namespace TestViewModel
             //x = cdb.SaveChanges();
             //Console.WriteLine($"city deleted {x}  rows"); 
 
-            User u2 = uList[0];
-            udb.Delete(u2);
-            x = udb.SaveChanges();
-            Console.WriteLine($"user deleted {x}  rows");
+            //User u2 = uList[0];
+            //udb.Delete(u2);
+            //x = udb.SaveChanges();
+            //Console.WriteLine($"user deleted {x}  rows");
         }
     }
 }

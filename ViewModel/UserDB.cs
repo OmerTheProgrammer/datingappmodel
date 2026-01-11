@@ -52,36 +52,47 @@ namespace ViewModel
         }
         public virtual void Delete(BaseEntity entity)
         {
-            BaseEntity reqEntity = this.NewEntity();
-            LikesDB lDB = new LikesDB();
+            if (entity == null) return;
 
-            var lList = (List<Likes>)lDB.SelectAll().FindAll(x => x.Liker.Id == entity.Id || x.LikedUser.Id == entity.Id);
+            PreferencesDB prefDB = new PreferencesDB();
+            // וודא שבתוך מחלקת Preferences יש מאפיין שנקרא User (או משהו דומה) שמכיל את ה-ID
+            var prefList = prefDB.SelectAll().FindAll(x => x.User.Id == entity.Id);
+            foreach (Preferences p in prefList) { prefDB.Delete(p); }
+            prefDB.SaveChanges();
+            PhotosDB pDB = new PhotosDB();
+            var pList = pDB.SelectAll().FindAll(x => x.User.Id == entity.Id);
+            foreach (Photos p in pList) { pDB.Delete(p); }
+            pDB.SaveChanges();
 
-            foreach (Likes l in lList)
-            {
-                lDB.Delete(l);
-            }
-            lDB.SaveChanges();
-            if (entity != null & entity.GetType() == reqEntity.GetType())
-            {
-                deleted.Add(new ChangeEntity(this.CreateDeletedSQL, entity));
-            }
+            // 1. מחיקת כל ההודעות - גם כאלו שהמשתמש שלח וגם כאלו שקיבל (דרך המאטצ'ים שלו)
+            MessagesDB meDB = new MessagesDB();
+            var meList = meDB.SelectAll().FindAll(x =>
+                x.Sender.Id == entity.Id ||
+                x.Match.User1.Id == entity.Id ||
+                x.Match.User2.Id == entity.Id);
 
-            BaseEntity reqEntity1 = this.NewEntity();
+            foreach (Messages m in meList) { meDB.Delete(m); }
+            meDB.SaveChanges(); // חובה לשמור כאן כדי לשחרר את הנעילה על Matches
+
+            // 2. עכשיו מוחקים מאטצ'ים
             MatchesDB mDB = new MatchesDB();
-
-            var mList = (List<Matches>)mDB.SelectAll().FindAll(x => x.User1.Id == entity.Id || x.User2.Id == entity.Id);
-
-            foreach (Matches m in mList)
-            {
-                mDB.Delete(m);
-            }
+            var mList = mDB.SelectAll().FindAll(x => x.User1.Id == entity.Id || x.User2.Id == entity.Id);
+            foreach (Matches m in mList) { mDB.Delete(m); }
             mDB.SaveChanges();
-            if (entity != null & entity.GetType() == reqEntity1.GetType())
+
+            // 3. מחיקת לייקים
+            LikesDB lDB = new LikesDB();
+            var lList = lDB.SelectAll().FindAll(x => x.Liker.Id == entity.Id || x.LikedUser.Id == entity.Id);
+            foreach (Likes l in lList) { lDB.Delete(l); }
+            lDB.SaveChanges();
+
+            // 4. ורק בסוף - מוסיפים את המשתמש עצמו למחיקה
+            BaseEntity reqEntity = this.NewEntity();
+            if (entity.GetType() == reqEntity.GetType())
             {
                 deleted.Add(new ChangeEntity(this.CreateDeletedSQL, entity));
             }
-        } 
+        }
         protected override void CreateDeletedSQL(BaseEntity entity, OleDbCommand cmd)
         {
             User c = entity as User;
