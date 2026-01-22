@@ -1,0 +1,22 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Swashbuckle.AspNetCore" Version="6.6.2" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Reference Include="ModelDates">
+      <HintPath>..\ViewModel\bin\Debug\net8.0\ModelDates.dll</HintPath>
+    </Reference>
+    <Reference Include="ViewModel">
+      <HintPath>..\ViewModel\bin\Debug\net8.0\ViewModel.dll</HintPath>
+    </Reference>
+  </ItemGroup>
+
+</Project>
