@@ -11,6 +11,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ModelDates", "ModelDates\Mo
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DatesApi", "DatesApi\DatesApi.csproj", "{3FDD415B-A47E-4BD6-9E6E-4494ED27FC0A}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "interfaceapi", "interfaceapi\interfaceapi.csproj", "{D6900020-585C-4CE2-B428-D7063B7FB2D1}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -33,6 +35,10 @@ Global
 		{3FDD415B-A47E-4BD6-9E6E-4494ED27FC0A}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{3FDD415B-A47E-4BD6-9E6E-4494ED27FC0A}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{3FDD415B-A47E-4BD6-9E6E-4494ED27FC0A}.Release|Any CPU.Build.0 = Release|Any CPU
+		{D6900020-585C-4CE2-B428-D7063B7FB2D1}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{D6900020-585C-4CE2-B428-D7063B7FB2D1}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{D6900020-585C-4CE2-B428-D7063B7FB2D1}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{D6900020-585C-4CE2-B428-D7063B7FB2D1}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
