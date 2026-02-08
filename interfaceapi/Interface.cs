@@ -4,7 +4,7 @@ using ViewModel;
 
 namespace interfaceapi
 {
-    public interface IApiService
+    public interface DatesInterface
     {
         public Task<CityList> GetAllCities();
 
