@@ -34,16 +34,16 @@ namespace ViewModel
             return man;
 
         }
-        // This method handles the logic of WHICH tables to update
+        
         public override void Update(BaseEntity entity)
         {
             Manager man = entity as Manager;
             if (man != null)
             {
-                // 1. Queue the update for the Manager table (this class)
+                
                 updated.Add(new ChangeEntity(this.CreateUpdatedSQL, entity));
 
-                // 2. Queue the update for the User table (the base class)
+                
                 updated.Add(new ChangeEntity(base.CreateUpdatedSQL, entity));
             }
         }
@@ -66,7 +66,7 @@ namespace ViewModel
             Manager man = entity as Manager;
             if (man != null)
             {
-                // The SQL command for your Manager-specific fields
+                
                 string sqlStr = "INSERT INTO Manager (Pass, ID) VALUES (@pass, @pid)"; 
 
                 command.CommandText = sqlStr;
@@ -75,13 +75,13 @@ namespace ViewModel
             }
         }
 
-        // This method builds the actual SQL string for the Manager table
+        
         protected override void CreateUpdatedSQL(BaseEntity entity, OleDbCommand command)
         {
             Manager man = entity as Manager;
             if (man != null)
             {
-                // The SQL command for your Manager-specific fields
+                
                 string sqlStr = "UPDATE Manager SET Pass = @pass WHERE ID = @pid";
 
                 command.CommandText = sqlStr;
