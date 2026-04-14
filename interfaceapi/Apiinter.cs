@@ -15,8 +15,8 @@ namespace interfaceapi
     {
 
         public HttpClient client;
-       
-        private readonly string uri = "https://vvc1jv51-5105.euw.devtunnels.ms/";
+
+        private readonly string uri = "https://fdgrrqj8-5105.euw.devtunnels.ms/api/Dates/";
 
         public Apiinter()
         {
@@ -99,7 +99,7 @@ namespace interfaceapi
         public async Task<int> DeleteAPrefrence(Preferences preferences) => (await client.DeleteAsync(uri + "DeletePreferences" + preferences.Id)).IsSuccessStatusCode ? 1 : 0;
 
         // --- USER ---
-        public async Task<UserList> GetAllUser(int id) => await client.GetFromJsonAsync<UserList>(uri + "UserSelector" + id);
+        public async Task<UserList> GetAllUser(int id) => await client.GetFromJsonAsync<UserList>(uri + "UserSelector");
         public async Task<int> InsertAUser(User user) => (await client.PostAsJsonAsync(uri + "InsertAUser", user)).IsSuccessStatusCode ? 1 : 0;
         public async Task<int> UpdateAUser(User user) => (await client.PutAsJsonAsync(uri + "UpdateAUser", user)).IsSuccessStatusCode ? 1 : 0;
         public async Task<int> DeleteAUser(User user) => (await client.DeleteAsync(uri + "DeleteUser" + user.Id)).IsSuccessStatusCode ? 1 : 0;
