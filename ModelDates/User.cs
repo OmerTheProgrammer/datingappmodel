@@ -26,6 +26,7 @@ namespace ModelDates
         {
             return $"{Age} {City.Name} {Gender.Name} {Bio}";
         }
+        public Preferences Preferences { get; set; } = new Preferences();
 
     }
 }
