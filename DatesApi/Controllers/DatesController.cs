@@ -78,20 +78,56 @@ namespace ApiSelect.Controllers
             PhotosList photos = dB.SelectAll();
             return photos;
         }
-        [HttpGet]
-        [ActionName("PreferencesSelector")]
-        public PreferencesList SelectAllPreferences()
+        [HttpGet("PreferencesSelector")]
+        public IActionResult PreferencesSelector(int userId)
         {
-            PreferencesDB dB = new PreferencesDB();
-            PreferencesList prefs = dB.SelectAll();
-            return prefs;
+            // 1. Instantiate the DB class properly to access non-static methods
+            using (var db = new ViewModel.PreferencesDB())
+            {
+                var allPrefs = db.SelectAll();
+                System.Diagnostics.Debug.WriteLine($"Total preferences in DB: {allPrefs.Count}");
+            }
+
+            // 2. Call your static lookup method
+            var prefs = ViewModel.PreferencesDB.SelectByUserId(userId);
+
+            // 3. Logic check
+            if (prefs == null)
+            {
+                return NotFound($"No preferences found for user {userId}");
+            }
+
+            return Ok(prefs);
         }
+
         [HttpGet]
         [ActionName("UserSelector")]
         public UserList SelectAllUsers()
         { UserDB dB = new UserDB();
         UserList users = dB.SelectAll();
         return users; 
+        }
+
+        [HttpGet("GetDiscoveryFeed")]
+        public IActionResult GetDiscoveryFeed(int currentUserId, int preferredGenderId, int minAge, int maxAge, int maxDistance)
+        {
+            try
+            {
+                ViewModel.UserDB db = new ViewModel.UserDB();
+                List<ModelDates.User> discoveryQueue = db.SelectFilteredDiscovery(
+                    currentUserId,
+                    preferredGenderId,
+                    minAge,
+                    maxAge,
+                    maxDistance
+                );
+
+                return Ok(discoveryQueue);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, $"Internal server error: {ex.Message}");
+            }
         }
         [HttpPost]
         public int InsertACity([FromBody] City city)
@@ -174,6 +210,46 @@ namespace ApiSelect.Controllers
             db.Insert(user);
             int x = db.SaveChanges();
             return x;
+        }
+        [HttpPost("DiscoveryFeed")]
+        public IActionResult GetDiscoveryFeed([FromBody] User currentUser)
+        {
+            try
+            {
+                // Fallback checks in case the incoming tracking object or its relations are null
+                if (currentUser == null || currentUser.Preferences == null)
+                {
+                    return BadRequest("User context preferences payload missing.");
+                }
+
+                // FIX CS0029: Drill down past the Gender object directly into its internal ID field property!
+                // Assuming your ModelDates.Gender class exposes its primary integer key as .Id or .GenderId.
+                // Change '.Id' below if your class utilizes a different identifier key name (e.g., .Id).
+                int preferredGenderId = currentUser.Preferences.PreferredGender != null
+                    ? currentUser.Preferences.PreferredGender.Id
+                    : 3; // Default fallback to 3 (Both) if not set
+
+                int minAge = currentUser.Preferences.AgeMin;
+                int maxAge = currentUser.Preferences.AgeMax;
+                int maxDistance = currentUser.Preferences.DistanceMax;
+
+                // Call our database selection method with pure integer values
+                // Inside DatesController.cs -> GetDiscoveryFeed
+                UserDB db = new UserDB();
+                List<User> discoveryQueue = db.SelectFilteredDiscovery(
+                    currentUser.Id,
+                    preferredGenderId,
+                    minAge,
+                    maxAge,
+                    maxDistance
+                );
+
+                return Ok(discoveryQueue);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest($"Discovery Feed Failed: {ex.Message}");
+            }
         }
 
 

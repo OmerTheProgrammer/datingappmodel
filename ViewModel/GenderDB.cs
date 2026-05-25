@@ -1,76 +1,71 @@
 ﻿using ModelDates;
 using System;
 using System.Collections.Generic;
+using System.Data;
 using System.Data.OleDb;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace ViewModel
 {
-    public class GenderDB:BaseDB
+    public class GenderDB : BaseDB
     {
-        public override BaseEntity NewEntity()
-        {
-            return new Gender();
-        }
+        public override BaseEntity NewEntity() => new Gender();
 
         public GenderList SelectAll()
         {
-            command.CommandText = $"SELECT * FROM Gender";
-
-            GenderList genderList = new GenderList(base.Select());
-            return genderList;
+            // We pass the SQL directly, allowing BaseDB to handle the local command
+            return new GenderList(base.Select("SELECT * FROM Gender"));
         }
-        protected override BaseEntity CreateModel(BaseEntity entity)
+
+        protected override BaseEntity CreateModel(BaseEntity entity, OleDbDataReader reader)
         {
             Gender g = entity as Gender;
             if (g != null)
             {
-                g.Name = reader["GenderName"].ToString();
-            }
+                if (reader["GenderName"] != DBNull.Value)
+                    g.Name = reader["GenderName"].ToString();
 
-            base.CreateModel(entity);
-            return entity;
+                if (reader["ID"] != DBNull.Value)
+                    g.Id = Convert.ToInt32(reader["ID"]);
+            }
+            return g;
         }
 
-        static private GenderList list = new GenderList();
         public static Gender SelectById(int id)
         {
-            GenderDB db = new GenderDB();
-            list = db.SelectAll();
-            Gender g = list.Find(item => item.Id == id);
-            return g;
+            using (GenderDB db = new GenderDB())
+            {
+                return db.SelectAll().Find(item => item.Id == id);
+            }
         }
 
         protected override void CreateDeletedSQL(BaseEntity entity, OleDbCommand cmd)
         {
-            throw new NotImplementedException();
+            Gender g = entity as Gender;
+            if (g == null) return;
+
+            cmd.CommandText = "DELETE FROM Gender WHERE ID = ?";
+            cmd.Parameters.AddWithValue("?", g.Id);
         }
 
         protected override void CreateInsertdSQL(BaseEntity entity, OleDbCommand cmd)
         {
             Gender g = entity as Gender;
-            if (g != null)
-            {
-                string sqlStr = $"Insert INTO Gender (GenderName) VALUES (@cName)";
+            if (g == null) return;
 
-                command.CommandText = sqlStr;
-                command.Parameters.Add(new OleDbParameter("@cName", g.Name));
-            }
+            cmd.CommandText = "INSERT INTO Gender (GenderName) VALUES (?)";
+            cmd.Parameters.Clear();
+            cmd.Parameters.AddWithValue("?", g.Name);
         }
 
         protected override void CreateUpdatedSQL(BaseEntity entity, OleDbCommand cmd)
         {
             Gender g = entity as Gender;
-            if (g != null)
-            {
-                string sqlStr = $"UPDATE Gender SET GenderName=@gName WHERE ID=@id";
+            if (g == null) return;
 
-                command.CommandText = sqlStr;
-                command.Parameters.Add(new OleDbParameter("@gName", g.Name));
-                command.Parameters.Add(new OleDbParameter("@id", g.Id));
-            }
+            cmd.CommandText = "UPDATE Gender SET GenderName = ? WHERE ID = ?";
+            cmd.Parameters.Clear();
+            cmd.Parameters.AddWithValue("?", g.Name);
+            cmd.Parameters.AddWithValue("?", g.Id);
         }
     }
 }

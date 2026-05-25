@@ -1,107 +1,82 @@
 ﻿using ModelDates;
 using System;
 using System.Collections.Generic;
+using System.Data;
 using System.Data.OleDb;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace ViewModel
 {
-    public class DistanceBetweenCitiesDB:BaseDB
+    public class DistanceBetweenCitiesDB : BaseDB
     {
-        
+        public override BaseEntity NewEntity() => new DistanceBetweenCities();
 
         public DistanceBetweenCitiesList SelectAll()
         {
-            command.CommandText = $"SELECT * FROM DistanceBetweenCities";
-
-            DistanceBetweenCitiesList distancebetweencitiesList = new DistanceBetweenCitiesList(base.Select());
-            return distancebetweencitiesList;
+            // Using the base.Select(sql) pattern with a local command
+            return new DistanceBetweenCitiesList(base.Select("SELECT * FROM DistanceBetweenCities"));
         }
-        protected override BaseEntity CreateModel(BaseEntity entity)
+
+        protected override BaseEntity CreateModel(BaseEntity entity, OleDbDataReader reader)
         {
             DistanceBetweenCities d = entity as DistanceBetweenCities;
-            d.City1 = CityDB.SelectById((int)reader["City1"]);
-            d.City2= CityDB.SelectById((int)reader["City2"]);
-            d.DistanceKm = double.Parse(reader["KM"].ToString());
-            base.CreateModel(entity);
+            if (d != null)
+            {
+                if (reader["City1"] != DBNull.Value)
+                    d.City1 = CityDB.SelectById(Convert.ToInt32(reader["City1"]));
+
+                if (reader["City2"] != DBNull.Value)
+                    d.City2 = CityDB.SelectById(Convert.ToInt32(reader["City2"]));
+
+                if (reader["KM"] != DBNull.Value)
+                    d.DistanceKm = Convert.ToDouble(reader["KM"]);
+
+                if (reader["ID"] != DBNull.Value)
+                    d.Id = Convert.ToInt32(reader["ID"]);
+            }
             return d;
-
-        }
-        public override BaseEntity NewEntity()
-        {
-            return new DistanceBetweenCities();
         }
 
-        static private DistanceBetweenCitiesList list = new DistanceBetweenCitiesList();
         public static DistanceBetweenCities SelectById(int id)
         {
-            DistanceBetweenCitiesDB db = new DistanceBetweenCitiesDB();
-            list = db.SelectAll();
-
-            DistanceBetweenCities d = list.Find(item => item.Id == id);
-            return d;
+            using (DistanceBetweenCitiesDB db = new DistanceBetweenCitiesDB())
+            {
+                return db.SelectAll().Find(item => item.Id == id);
+            }
         }
 
         protected override void CreateDeletedSQL(BaseEntity entity, OleDbCommand cmd)
         {
             DistanceBetweenCities c = entity as DistanceBetweenCities;
-            if (c != null)
-            {
-                string sqlStr = $"DELETE FROM DistanceBetweenCities where id=@pid";
-                command.CommandText = sqlStr;
-                command.Parameters.Add(new OleDbParameter("@pid", c.Id));
-            }
-            
+            if (c == null) return;
+
+            cmd.CommandText = "DELETE FROM DistanceBetweenCities WHERE ID = ?";
+            cmd.Parameters.Clear();
+            cmd.Parameters.AddWithValue("?", c.Id);
         }
 
         protected override void CreateInsertdSQL(BaseEntity entity, OleDbCommand cmd)
         {
             DistanceBetweenCities p = entity as DistanceBetweenCities;
-            if (p != null)
-            {
-                // Removed ID from the list because Access handles AutoNumbers automatically
-                string sqlStr = "INSERT INTO DistanceBetweenCities (City1, City2, KM ) " +
-                                " VALUES (@City1, @City2, @KM)";
+            if (p == null) return;
 
-                cmd.CommandText = sqlStr;
-                cmd.Parameters.Clear();
-
-                // Parameters must be in the exact order they appear in the SQL string above
-                cmd.Parameters.Add(new OleDbParameter("@City1", p.City1.Id));
-                cmd.Parameters.Add(new OleDbParameter("@City2", p.City2.Id));
-                cmd.Parameters.Add(new OleDbParameter("@KM", p.DistanceKm));
-       
-            }
+            cmd.CommandText = "INSERT INTO DistanceBetweenCities (City1, City2, KM) VALUES (?, ?, ?)";
+            cmd.Parameters.Clear();
+            cmd.Parameters.AddWithValue("?", p.City1.Id);
+            cmd.Parameters.AddWithValue("?", p.City2.Id);
+            cmd.Parameters.AddWithValue("?", p.DistanceKm);
         }
 
         protected override void CreateUpdatedSQL(BaseEntity entity, OleDbCommand cmd)
         {
             DistanceBetweenCities c = entity as DistanceBetweenCities;
-            if (c != null)
-            {
-                // Removed the comma after KM=? and added a space before WHERE
-                string sqlStr = "UPDATE DistanceBetweenCities SET City1=?, City2=?, KM=? " +
-                                "WHERE ID=?";
+            if (c == null) return;
 
-                cmd.CommandText = sqlStr;
-                cmd.Parameters.Clear();
-
-                // 1. Text fields
-                cmd.Parameters.Add("@cCity1", OleDbType.Integer).Value = c.City1.Id;
-
-                // 2. Numeric fields (Ensure these are integers in Access)
-                cmd.Parameters.Add("@cCity2", OleDbType.Integer).Value = c.City2.Id;
-
-                // 3. Text fields
-                cmd.Parameters.Add("@cKM", OleDbType.Integer).Value = c.DistanceKm;
-        
-
-                // 9. WHERE ID (Integer)
-                cmd.Parameters.Add("@id", OleDbType.Integer).Value = c.Id;
-            }
+            cmd.CommandText = "UPDATE DistanceBetweenCities SET City1 = ?, City2 = ?, KM = ? WHERE ID = ?";
+            cmd.Parameters.Clear();
+            cmd.Parameters.AddWithValue("?", c.City1.Id);
+            cmd.Parameters.AddWithValue("?", c.City2.Id);
+            cmd.Parameters.AddWithValue("?", c.DistanceKm);
+            cmd.Parameters.AddWithValue("?", c.Id);
         }
     }
-    
 }

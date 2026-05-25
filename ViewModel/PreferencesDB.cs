@@ -2,121 +2,96 @@
 using System;
 using System.Collections.Generic;
 using System.Data.OleDb;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace ViewModel
 {
-    public class PreferencesDB:BaseDB
+    public class PreferencesDB : BaseDB
     {
-   
         public PreferencesList SelectAll()
         {
-            command.CommandText = $"SELECT * FROM Preferences";
-
-            PreferencesList preferencesList = new PreferencesList(base.Select());
-            return preferencesList;
+            return new PreferencesList(base.Select("SELECT * FROM Preferences"));
         }
-        protected override BaseEntity CreateModel(BaseEntity entity)
+
+        private bool HasColumn(OleDbDataReader r, string name)
+        {
+            for (int i = 0; i < r.FieldCount; i++)
+                if (string.Equals(r.GetName(i), name, StringComparison.OrdinalIgnoreCase))
+                    return true;
+            return false;
+        }
+
+        protected override BaseEntity CreateModel(BaseEntity entity, OleDbDataReader reader)
         {
             Preferences p = entity as Preferences;
-            p.User = UserDB.SelectById((int) reader["UserID"]);
-            p.MinAge =int.Parse( reader["AgeMin"].ToString());
-            p.MaxAge =int.Parse( reader["AgeMax"].ToString());
-            p.PreferredGender = GenderDB.SelectById((int)reader["PreferredGender"]);
-            var xx = reader["DistanceMax"].ToString();
-            p.MaxDistanceKm =int.Parse( reader["DistanceMax"].ToString()); 
-            base.CreateModel(entity);
+
+            if (HasColumn(reader, "UserID") && reader["UserID"] != DBNull.Value)
+                p.User = UserDB.SelectById(Convert.ToInt32(reader["UserID"]));
+
+            if (HasColumn(reader, "PreferredGender") && reader["PreferredGender"] != DBNull.Value)
+                p.PreferredGender = GenderDB.SelectById(Convert.ToInt32(reader["PreferredGender"]));
+
+            p.AgeMin = HasColumn(reader, "AgeMin") && reader["AgeMin"] != DBNull.Value ? Convert.ToInt32(reader["AgeMin"]) : 18;
+            p.AgeMax = HasColumn(reader, "AgeMax") && reader["AgeMax"] != DBNull.Value ? Convert.ToInt32(reader["AgeMax"]) : 30;
+            p.DistanceMax = HasColumn(reader, "DistanceMax") && reader["DistanceMax"] != DBNull.Value ? Convert.ToInt32(reader["DistanceMax"]) : 100;
+
+            string idName = HasColumn(reader, "id") ? "id" : "ID";
+            entity.Id = (HasColumn(reader, idName) && reader[idName] != DBNull.Value) ? Convert.ToInt32(reader[idName]) : 0;
+
             return p;
-
-        }
-        public override BaseEntity NewEntity()
-        {
-            return new Preferences();
         }
 
-        static private PreferencesList list = new PreferencesList();
+        public override BaseEntity NewEntity() => new Preferences();
+
         public static Preferences SelectById(int id)
         {
-            PreferencesDB db = new PreferencesDB();
-            list = db.SelectAll();
+            using (PreferencesDB db = new PreferencesDB())
+            {
+                return db.SelectAll().Find(item => item.Id == id);
+            }
+        }
 
-            Preferences p = list.Find(item => item.Id == id);
-            return p;
+        public static Preferences SelectByUserId(int userId)
+        {
+            using (PreferencesDB db = new PreferencesDB())
+            {
+                return db.SelectAll().Find(item => item.User != null && item.User.Id == userId);
+            }
         }
 
         protected override void CreateDeletedSQL(BaseEntity entity, OleDbCommand cmd)
         {
-            Preferences c = entity as Preferences;
-            if (c != null)
-            {
-                string sqlStr = $"DELETE FROM Preferences where id=@pid";
-                command.CommandText = sqlStr;
-                command.Parameters.Add(new OleDbParameter("@pid", c.Id));
-            }
+            Preferences p = entity as Preferences;
+            if (p == null) return;
+
+            cmd.CommandText = "DELETE FROM Preferences WHERE ID = @pid";
+            cmd.Parameters.Add(new OleDbParameter("@pid", p.Id));
         }
 
         protected override void CreateInsertdSQL(BaseEntity entity, OleDbCommand cmd)
         {
             Preferences p = entity as Preferences;
-            if (p != null)
-            {
-                // Removed ID from the list because Access handles AutoNumbers automatically
-                string sqlStr = "INSERT INTO Preferences (UserID,PreferredGender, AgeMin, AgeMax, DistanceMax) " +
-                                " VALUES (@UserID, @PreferredGender, @AgeMin, @AgeMax, @DistanceMax)";
+            if (p == null) return;
 
-                cmd.CommandText = sqlStr;
-                cmd.Parameters.Clear();
-
-                // Parameters must be in the exact order they appear in the SQL string above
-                cmd.Parameters.Add(new OleDbParameter("@UserID", p.User.Id));
-                cmd.Parameters.Add(new OleDbParameter("@PreferredGender", p.PreferredGender.Id));
-                cmd.Parameters.Add(new OleDbParameter("@AgeMin", p.MinAge));
-                cmd.Parameters.Add(new OleDbParameter("@AgeMax", p.MaxAge)); // Ensure this is an Integer
-                cmd.Parameters.Add(new OleDbParameter("@DistanceMax", p.MaxDistanceKm)); // Ensure this is an Integer
-           
-            }
+            cmd.CommandText = "INSERT INTO Preferences (UserID, PreferredGender, AgeMin, AgeMax, DistanceMax) VALUES (?, ?, ?, ?, ?)";
+            cmd.Parameters.AddWithValue("?", p.User.Id);
+            cmd.Parameters.AddWithValue("?", p.PreferredGender.Id);
+            cmd.Parameters.AddWithValue("?", p.AgeMin);
+            cmd.Parameters.AddWithValue("?", p.AgeMax);
+            cmd.Parameters.AddWithValue("?", p.DistanceMax);
         }
 
         protected override void CreateUpdatedSQL(BaseEntity entity, OleDbCommand cmd)
         {
-            Preferences c = entity as Preferences;
-            if (c != null)
-            {
-                // Added spaces at the end of lines to prevent "DistanceMax=?WHERE" merging
-                string sqlStr = "UPDATE Preferences SET " +
-                                "UserID = ?, " +
-                                "PreferredGender = ?, " +
-                                "AgeMin = ?, " +
-                                "AgeMax = ?, " +
-                                "DistanceMax = ? " +
-                                "WHERE ID = ?";
+            Preferences p = entity as Preferences;
+            if (p == null) return;
 
-                cmd.CommandText = sqlStr;
-                cmd.Parameters.Clear();
-
-                // IMPORTANT: In OleDb, parameters MUST be added in the exact order 
-                // they appear in the SQL string, regardless of the @ name.
-
-                // 1. UserID = ?
-                cmd.Parameters.Add("@cUserID", OleDbType.Integer).Value = c.User.Id;
-
-                // 2. PreferredGender = ?
-                cmd.Parameters.Add("@cPreferredGender", OleDbType.Integer).Value = c.PreferredGender.Id;
-
-                // 3. AgeMin = ?
-                cmd.Parameters.Add("@cAgeMin", OleDbType.Integer).Value = c.MinAge;
-
-                // 4. AgeMax = ?
-                cmd.Parameters.Add("@cAgeMax", OleDbType.Integer).Value = c.MaxAge;
-
-                // 5. DistanceMax = ?
-                cmd.Parameters.Add("@cDistanceMax", OleDbType.Integer).Value = c.MaxDistanceKm;
-
-                // 6. WHERE ID = ?
-                cmd.Parameters.Add("@id", OleDbType.Integer).Value = c.Id;
-            }
+            cmd.CommandText = "UPDATE Preferences SET UserID = ?, PreferredGender = ?, AgeMin = ?, AgeMax = ?, DistanceMax = ? WHERE ID = ?";
+            cmd.Parameters.AddWithValue("?", p.User.Id);
+            cmd.Parameters.AddWithValue("?", p.PreferredGender.Id);
+            cmd.Parameters.AddWithValue("?", p.AgeMin);
+            cmd.Parameters.AddWithValue("?", p.AgeMax);
+            cmd.Parameters.AddWithValue("?", p.DistanceMax);
+            cmd.Parameters.AddWithValue("?", p.Id);
         }
     }
 }

@@ -1,99 +1,87 @@
 ﻿using ModelDates;
 using System;
 using System.Collections.Generic;
+using System.Data;
 using System.Data.OleDb;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace ViewModel
 {
-    public class CityDB:BaseDB
+    public class CityDB : BaseDB
     {
-       
-           public CityList SelectAll()
+        public override BaseEntity NewEntity() => new City();
+
+        public CityList SelectAll()
         {
-            command.CommandText = "SELECT * FROM City";
-            CityList cityList = new CityList(base.Select());
-            return cityList;
+            // Use the base Select with a local command
+            return new CityList(base.Select("SELECT * FROM City"));
         }
 
-        protected override BaseEntity CreateModel(BaseEntity entity)
+        protected override BaseEntity CreateModel(BaseEntity entity, OleDbDataReader reader)
         {
             City c = entity as City;
             if (c != null)
             {
-                c.Name = reader["CityName"].ToString();
+                if (reader["CityName"] != DBNull.Value)
+                    c.Name = reader["CityName"].ToString();
+
+                if (reader["ID"] != DBNull.Value)
+                    c.Id = Convert.ToInt32(reader["ID"]);
             }
-
-            base.CreateModel(entity);
-            return entity;
+            return c;
         }
 
-        public override BaseEntity NewEntity()
-        {
-            return new City();
-        }
-        static private CityList list = new CityList();
         public static City SelectById(int id)
         {
-            CityDB db = new CityDB();
-            list = db.SelectAll();
-            City g = list.Find(item => item.Id == id);
-            return g;
+            using (CityDB db = new CityDB())
+            {
+                return db.SelectAll().Find(item => item.Id == id);
+            }
         }
-        public virtual void Delete(BaseEntity entity)
-        {
-            BaseEntity reqEntity = this.NewEntity();
-            DistanceBetweenCitiesDB dbcDB=new DistanceBetweenCitiesDB();
-           
-            var dbcList = (List<DistanceBetweenCities>) dbcDB.SelectAll().FindAll(x => x.City1.Id==entity.Id || x.City2.Id==entity.Id);
 
-            foreach (DistanceBetweenCities d in dbcList)
+        public override void Delete(BaseEntity entity)
+        {
+            // Use 'using' to ensure the helper DB cleans itself up
+            using (DistanceBetweenCitiesDB dbcDB = new DistanceBetweenCitiesDB())
             {
-                dbcDB.Delete(d);
+                var dbcList = dbcDB.SelectAll().FindAll(x => x.City1.Id == entity.Id || x.City2.Id == entity.Id);
+                foreach (DistanceBetweenCities d in dbcList)
+                {
+                    dbcDB.Delete(d);
+                }
+                dbcDB.SaveChanges();
             }
-            dbcDB.SaveChanges();
-            if (entity != null & entity.GetType() == reqEntity.GetType())
-            {
-                deleted.Add(new ChangeEntity(this.CreateDeletedSQL, entity));
-            }
+            base.Delete(entity);
         }
 
         protected override void CreateDeletedSQL(BaseEntity entity, OleDbCommand cmd)
         {
             City c = entity as City;
-            if (c != null)
-            {
-                string sqlStr = $"DELETE FROM City where id=@pid";
-                command.CommandText = sqlStr;
-                command.Parameters.Add(new OleDbParameter("@pid", c.Id));
-            }
+            if (c == null) return;
+
+            cmd.CommandText = "DELETE FROM City WHERE ID = ?";
+            cmd.Parameters.Clear();
+            cmd.Parameters.AddWithValue("?", c.Id);
         }
 
         protected override void CreateInsertdSQL(BaseEntity entity, OleDbCommand cmd)
         {
             City c = entity as City;
-            if (c != null)
-            {
-                string sqlStr = $"Insert INTO City (CityName) VALUES (@cName)";
+            if (c == null) return;
 
-                command.CommandText = sqlStr;
-                command.Parameters.Add(new OleDbParameter("@cName", c.Name));
-            }
+            cmd.CommandText = "INSERT INTO City (CityName) VALUES (?)";
+            cmd.Parameters.Clear();
+            cmd.Parameters.AddWithValue("?", c.Name);
         }
 
         protected override void CreateUpdatedSQL(BaseEntity entity, OleDbCommand cmd)
         {
             City c = entity as City;
-            if (c != null)
-            {
-                string sqlStr = $"UPDATE City SET CityName=@cName WHERE ID=@id";
+            if (c == null) return;
 
-                command.CommandText = sqlStr;
-                command.Parameters.Add(new OleDbParameter("@cName", c.Name));
-                command.Parameters.Add(new OleDbParameter("@id", c.Id));
-            }
+            cmd.CommandText = "UPDATE City SET CityName = ? WHERE ID = ?";
+            cmd.Parameters.Clear();
+            cmd.Parameters.AddWithValue("?", c.Name);
+            cmd.Parameters.AddWithValue("?", c.Id);
         }
     }
 }

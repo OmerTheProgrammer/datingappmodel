@@ -1,100 +1,77 @@
 ﻿using ModelDates;
 using System;
 using System.Collections.Generic;
+using System.Data;
 using System.Data.OleDb;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace ViewModel
 {
-    public class PhotosDB:BaseDB
+    public class PhotosDB : BaseDB
     {
-        
+        public override BaseEntity NewEntity() => new Photos();
 
         public PhotosList SelectAll()
         {
-            command.CommandText = $"SELECT * FROM Photos";
-
-            PhotosList photosList = new PhotosList(base.Select());
-            return photosList;
+            // Use base.Select with a local command to ensure thread safety
+            return new PhotosList(base.Select("SELECT * FROM Photos"));
         }
-        protected override BaseEntity CreateModel(BaseEntity entity)
+
+        protected override BaseEntity CreateModel(BaseEntity entity, OleDbDataReader reader)
         {
             Photos ph = entity as Photos;
-            ph.User = UserDB.SelectById((int)reader["UserID"]);
-            ph.Url =reader["PhotoURL"].ToString();
-           
-            base.CreateModel(entity);
+            if (ph != null)
+            {
+                if (reader["UserID"] != DBNull.Value)
+                    ph.User = UserDB.SelectById(Convert.ToInt32(reader["UserID"]));
+
+                if (reader["PhotoURL"] != DBNull.Value)
+                    ph.Url = reader["PhotoURL"].ToString();
+
+                if (reader["ID"] != DBNull.Value)
+                    ph.Id = Convert.ToInt32(reader["ID"]);
+            }
             return ph;
-
-        }
-        public override BaseEntity NewEntity()
-        {
-            return new Photos();
         }
 
-        static private PhotosList list = new PhotosList();
         public static Photos SelectById(int id)
         {
-            PhotosDB db = new PhotosDB();
-            list = db.SelectAll();
-
-            Photos ph = list.Find(item => item.Id == id);
-            return ph;
+            using (PhotosDB db = new PhotosDB())
+            {
+                return db.SelectAll().Find(item => item.Id == id);
+            }
         }
 
         protected override void CreateDeletedSQL(BaseEntity entity, OleDbCommand cmd)
         {
-            Photos c = entity as Photos;
-            if (c != null)
-            {
-                string sqlStr = $"DELETE FROM Photos where id=@pid";
-                command.CommandText = sqlStr;
-                command.Parameters.Add(new OleDbParameter("@pid", c.Id));
-            }
+            Photos ph = entity as Photos;
+            if (ph == null) return;
+
+            cmd.CommandText = "DELETE FROM Photos WHERE ID = ?";
+            cmd.Parameters.Clear();
+            cmd.Parameters.AddWithValue("?", ph.Id);
         }
 
         protected override void CreateInsertdSQL(BaseEntity entity, OleDbCommand cmd)
         {
-            Photos p = entity as Photos;
-            if (p != null)
-            {
-                // Removed ID from the list because Access handles AutoNumbers automatically
-                string sqlStr = "INSERT INTO Photos (UserID, PhotoURL) " +
-                                " VALUES (@UserID, @PhotoURL)";
+            Photos ph = entity as Photos;
+            if (ph == null) return;
 
-                cmd.CommandText = sqlStr;
-                cmd.Parameters.Clear();
-
-                // Parameters must be in the exact order they appear in the SQL string above
-                cmd.Parameters.Add(new OleDbParameter("@UserID", p.User.Id));
-                cmd.Parameters.Add(new OleDbParameter("@PhotoURL", p.Url));
-             
-            }
+            cmd.CommandText = "INSERT INTO Photos (UserID, PhotoURL) VALUES (?, ?)";
+            cmd.Parameters.Clear();
+            cmd.Parameters.AddWithValue("?", ph.User.Id);
+            cmd.Parameters.AddWithValue("?", ph.Url);
         }
 
         protected override void CreateUpdatedSQL(BaseEntity entity, OleDbCommand cmd)
         {
-            Photos c = entity as Photos;
-            if (c != null)
-            {
-                // Remove the comma after the second '?' and add a space before 'WHERE'
-                string sqlStr = "UPDATE Photos SET UserID=?, PhotoURL=?" +
-                                "WHERE ID=?";
+            Photos ph = entity as Photos;
+            if (ph == null) return;
 
-                cmd.CommandText = sqlStr;
-                cmd.Parameters.Clear();
-
-                // 1. Text fields
-                cmd.Parameters.Add("@cUserID", OleDbType.Integer).Value = c.User.Id;
-
-                // 2. Numeric fields (Ensure these are integers in Access)
-                cmd.Parameters.Add("@cPhotoID", OleDbType.VarWChar).Value = c.Url;
-
-                // 9. WHERE ID (Integer)
-                cmd.Parameters.Add("@id", OleDbType.Integer).Value = c.Id;
-            }
+            cmd.CommandText = "UPDATE Photos SET UserID = ?, PhotoURL = ? WHERE ID = ?";
+            cmd.Parameters.Clear();
+            cmd.Parameters.AddWithValue("?", ph.User.Id);
+            cmd.Parameters.AddWithValue("?", ph.Url);
+            cmd.Parameters.AddWithValue("?", ph.Id);
         }
     }
 }

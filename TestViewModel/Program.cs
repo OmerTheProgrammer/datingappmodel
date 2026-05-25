@@ -40,8 +40,8 @@ namespace TestViewModel
             PreferencesDB pdb = new();
             PreferencesList preferencesList = pdb.SelectAll();
             foreach (Preferences p in preferencesList)
-                Console.WriteLine(p.User + " : " + p.MinAge + " : " + p.MaxAge + " : " + p.PreferredGender
-                    + " : " + p.MaxDistanceKm);
+                Console.WriteLine(p.User + " : " + p.AgeMin + " : " + p.AgeMax + " : " + p.PreferredGender
+                    + " : " + p.DistanceMax);
 
             LikesDB ldb = new();
             LikesList likesList = ldb.SelectAll();
@@ -234,9 +234,9 @@ namespace TestViewModel
             Preferences preferenceToUpdate = pList[0];
             preferenceToUpdate.User = uList[0];
             preferenceToUpdate.PreferredGender=gList[2];
-            preferenceToUpdate.MinAge = 25;
-            preferenceToUpdate.MaxAge = 48;
-            preferenceToUpdate.MaxDistanceKm = 245;
+            preferenceToUpdate.AgeMin = 25;
+            preferenceToUpdate.AgeMax = 48;
+            preferenceToUpdate.DistanceMax = 245;
 
 
 
@@ -247,7 +247,7 @@ namespace TestViewModel
             pList = pdb.SelectAll();
             foreach (Preferences p in pList)
             {
-                Console.WriteLine(p.User + " " + p.PreferredGender+" "+ p.MinAge+" "+p.MaxAge+" "+p.MaxDistanceKm);
+                Console.WriteLine(p.User + " " + p.PreferredGender+" "+ p.AgeMin+" "+p.AgeMax+" "+p.DistanceMax);
 
             }
 
@@ -374,15 +374,15 @@ namespace TestViewModel
             {
                 User = uList.Last(),
                 PreferredGender = gList[2],
-                MinAge = 19,
-                MaxAge=69,
-                 MaxDistanceKm=196,
+                AgeMin = 19,
+                AgeMax=69,
+                 DistanceMax=196,
 
             };
             pdb.Insert(p1);
             x = pdb.SaveChanges();
             Console.WriteLine($"preferences added {x}  rows" + " : " + p1.User.Username + " prefernces are:  " + p1.PreferredGender+ " "
-                +p1.MaxDistanceKm+" "+ p1.MinAge+" "+p1.MaxAge);
+                +p1.DistanceMax+" "+ p1.AgeMin+" "+p1.AgeMax);
 
             Manager man1 = new Manager()
             {

@@ -1,99 +1,77 @@
 ﻿using ModelDates;
 using System;
 using System.Collections.Generic;
+using System.Data;
 using System.Data.OleDb;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace ViewModel
 {
-    public class MatchesDB:BaseDB
+    public class MatchesDB : BaseDB
     {
-       
+        public override BaseEntity NewEntity() => new Matches();
 
         public MatchesList SelectAll()
         {
-            command.CommandText = $"SELECT * FROM Matches";
-
-            MatchesList matchesList = new MatchesList(base.Select());
-            return matchesList;
+            // Pass the SQL string directly to the safe, local-command base.Select()
+            return new MatchesList(base.Select("SELECT * FROM Matches"));
         }
-        protected override BaseEntity CreateModel(BaseEntity entity)
+
+        protected override BaseEntity CreateModel(BaseEntity entity, OleDbDataReader reader)
         {
             Matches m = entity as Matches;
-            m.User1 = UserDB.SelectById((int)reader["User1ID"]);
-            m.User2 = UserDB.SelectById((int)reader["User2ID"]);
+            if (m != null)
+            {
+                if (reader["User1ID"] != DBNull.Value)
+                    m.User1 = UserDB.SelectById(Convert.ToInt32(reader["User1ID"]));
 
-            base.CreateModel(entity);
+                if (reader["User2ID"] != DBNull.Value)
+                    m.User2 = UserDB.SelectById(Convert.ToInt32(reader["User2ID"]));
+
+                if (reader["ID"] != DBNull.Value)
+                    m.Id = Convert.ToInt32(reader["ID"]);
+            }
             return m;
-
-        }
-        public override BaseEntity NewEntity()
-        {
-            return new Matches();
         }
 
-        static private MatchesList list = new MatchesList();
         public static Matches SelectById(int id)
         {
-            MatchesDB db = new MatchesDB();
-            list = db.SelectAll();
-
-            Matches m = list.Find(item => item.Id == id);
-            return m;
+            using (MatchesDB db = new MatchesDB())
+            {
+                return db.SelectAll().Find(item => item.Id == id);
+            }
         }
 
         protected override void CreateDeletedSQL(BaseEntity entity, OleDbCommand cmd)
         {
-            Matches c = entity as Matches;
-            if (c != null)
-            {
-                string sqlStr = $"DELETE FROM Matches where id=@pid";
-                command.CommandText = sqlStr;
-                command.Parameters.Add(new OleDbParameter("@pid", c.Id));
-            }
+            Matches m = entity as Matches;
+            if (m == null) return;
+
+            cmd.CommandText = "DELETE FROM Matches WHERE ID = ?";
+            cmd.Parameters.Clear();
+            cmd.Parameters.AddWithValue("?", m.Id);
         }
 
         protected override void CreateInsertdSQL(BaseEntity entity, OleDbCommand cmd)
         {
-            Matches p = entity as Matches;
-            if (p != null)
-            {
-                // Removed ID from the list because Access handles AutoNumbers automatically
-                string sqlStr = "INSERT INTO Matches (User1ID, User2ID ) " +
-                                " VALUES (@User1ID, @User2ID)";
+            Matches m = entity as Matches;
+            if (m == null) return;
 
-                cmd.CommandText = sqlStr;
-                cmd.Parameters.Clear();
-
-                // Parameters must be in the exact order they appear in the SQL string above
-                cmd.Parameters.Add(new OleDbParameter("@User1ID", p.User1.Id));
-                cmd.Parameters.Add(new OleDbParameter("@User2ID", p.User2.Id));
-            }
+            cmd.CommandText = "INSERT INTO Matches (User1ID, User2ID) VALUES (?, ?)";
+            cmd.Parameters.Clear();
+            cmd.Parameters.AddWithValue("?", m.User1.Id);
+            cmd.Parameters.AddWithValue("?", m.User2.Id);
         }
 
         protected override void CreateUpdatedSQL(BaseEntity entity, OleDbCommand cmd)
         {
-            Matches c = entity as Matches;
-            if (c != null)
-            {
-                // Remove the comma after the second '?' and add a space before 'WHERE'
-                string sqlStr = "UPDATE Matches SET User1ID=?, User2ID=? " +
-                                "WHERE ID=?";
+            Matches m = entity as Matches;
+            if (m == null) return;
 
-                cmd.CommandText = sqlStr;
-                cmd.Parameters.Clear();
-
-                // 1. Text fields
-                cmd.Parameters.Add("@cUser1ID", OleDbType.Integer).Value = c.User1.Id;
-
-                // 2. Numeric fields (Ensure these are integers in Access)
-                cmd.Parameters.Add("@cUser2ID", OleDbType.Integer).Value = c.User2.Id;
-
-                // 9. WHERE ID (Integer)
-                cmd.Parameters.Add("@id", OleDbType.Integer).Value = c.Id;
-            }
+            cmd.CommandText = "UPDATE Matches SET User1ID = ?, User2ID = ? WHERE ID = ?";
+            cmd.Parameters.Clear();
+            cmd.Parameters.AddWithValue("?", m.User1.Id);
+            cmd.Parameters.AddWithValue("?", m.User2.Id);
+            cmd.Parameters.AddWithValue("?", m.Id);
         }
     }
 }

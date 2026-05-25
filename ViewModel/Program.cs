@@ -39,8 +39,8 @@ namespace ViewModel
             PreferencesDB pdb = new();
             PreferencesList preferencesList = pdb.SelectAll();
             foreach (Preferences p in preferencesList)
-                Console.WriteLine(p.User+" : "+ p.MinAge+" : "+ p.MaxAge+" : "+ p.PreferredGender
-                    +" : "+p.MaxDistanceKm);
+                Console.WriteLine(p.User+" : "+ p.AgeMin+" : "+ p.AgeMax+" : "+ p.PreferredGender
+                    +" : "+p.DistanceMax);
 
             LikesDB ldb = new();
             LikesList likesList = ldb.SelectAll();

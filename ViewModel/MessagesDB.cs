@@ -1,108 +1,87 @@
 ﻿using ModelDates;
 using System;
 using System.Collections.Generic;
+using System.Data;
 using System.Data.OleDb;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace ViewModel
 {
-    public class MessagesDB:BaseDB
+    public class MessagesDB : BaseDB
     {
-        
+        public override BaseEntity NewEntity() => new Messages();
 
         public MessagesList SelectAll()
         {
-            command.CommandText = $"SELECT * FROM Messages";
-
-            MessagesList messagesList = new MessagesList(base.Select());
-            return messagesList;
+            // Pass SQL string directly to trigger local command execution
+            return new MessagesList(base.Select("SELECT * FROM Messages"));
         }
-        protected override BaseEntity CreateModel(BaseEntity entity)
+
+        protected override BaseEntity CreateModel(BaseEntity entity, OleDbDataReader reader)
         {
             ModelDates.Messages me = entity as ModelDates.Messages;
-            me.Match = MatchesDB.SelectById((int)reader["MatchID"]);
-            me.Sender = UserDB.SelectById((int)reader["SenderID"]);
-            me.MessageText = reader["MessageText"].ToString();
-            me.SentAt= DateTime.Parse(reader["SentAt"].ToString());
+            if (me != null)
+            {
+                if (reader["MatchID"] != DBNull.Value)
+                    me.Match = MatchesDB.SelectById(Convert.ToInt32(reader["MatchID"]));
 
-            base.CreateModel(entity);
+                if (reader["SenderID"] != DBNull.Value)
+                    me.Sender = UserDB.SelectById(Convert.ToInt32(reader["SenderID"]));
+
+                if (reader["MessageText"] != DBNull.Value)
+                    me.MessageText = reader["MessageText"].ToString();
+
+                if (reader["SentAt"] != DBNull.Value)
+                    me.SentAt = Convert.ToDateTime(reader["SentAt"]);
+
+                if (reader["ID"] != DBNull.Value)
+                    me.Id = Convert.ToInt32(reader["ID"]);
+            }
             return me;
-
-        }
-        public override BaseEntity NewEntity()
-        {
-            return new Messages();
         }
 
-        static private MessagesList list = new MessagesList();
         public static Messages SelectById(int id)
         {
-            MessagesDB db = new MessagesDB();
-            list = db.SelectAll();
-
-            Messages me = list.Find(item => item.Id == id);
-            return me;
+            using (MessagesDB db = new MessagesDB())
+            {
+                return db.SelectAll().Find(item => item.Id == id);
+            }
         }
 
         protected override void CreateDeletedSQL(BaseEntity entity, OleDbCommand cmd)
         {
-            Messages c = entity as Messages;
-            if (c != null)
-            {
-                string sqlStr = $"DELETE FROM Messages where id=@pid";
-                command.CommandText = sqlStr;
-                command.Parameters.Add(new OleDbParameter("@pid", c.Id));
-            }
+            Messages m = entity as Messages;
+            if (m == null) return;
+
+            cmd.CommandText = "DELETE FROM Messages WHERE ID = ?";
+            cmd.Parameters.Clear();
+            cmd.Parameters.AddWithValue("?", m.Id);
         }
 
         protected override void CreateInsertdSQL(BaseEntity entity, OleDbCommand cmd)
         {
-            Messages p = entity as Messages;
-            if (p != null)
-            {
-                // Removed ID from the list because Access handles AutoNumbers automatically
-                string sqlStr = "INSERT INTO Messages (MatchID, SenderID, MessageText, SentAt) " +
-                                " VALUES (@MatchID, @SenderID, @MessageText, @SentAt)";
+            Messages m = entity as Messages;
+            if (m == null) return;
 
-                cmd.CommandText = sqlStr;
-                cmd.Parameters.Clear();
-
-                // Parameters must be in the exact order they appear in the SQL string above
-                cmd.Parameters.Add(new OleDbParameter("@MatchID", p.Match.Id));
-                cmd.Parameters.Add(new OleDbParameter("@SenderID", p.Sender.Id));
-                cmd.Parameters.Add(new OleDbParameter("@MessageText", p.MessageText));
-                OleDbParameter dateParam = new OleDbParameter("@SentAt", OleDbType.DBDate);
-                dateParam.Value = p.SentAt;
-                cmd.Parameters.Add(dateParam);
-            }
+            cmd.CommandText = "INSERT INTO Messages (MatchID, SenderID, MessageText, SentAt) VALUES (?, ?, ?, ?)";
+            cmd.Parameters.Clear();
+            cmd.Parameters.AddWithValue("?", m.Match.Id);
+            cmd.Parameters.AddWithValue("?", m.Sender.Id);
+            cmd.Parameters.AddWithValue("?", m.MessageText);
+            cmd.Parameters.AddWithValue("?", m.SentAt);
         }
 
         protected override void CreateUpdatedSQL(BaseEntity entity, OleDbCommand cmd)
         {
-            Messages c = entity as Messages;
-            if (c != null)
-            {
-                // Remove the comma after the second '?' and add a space before 'WHERE'
-                string sqlStr = "UPDATE Messages SET MatchID=?, SenderID=?, MessageText=?,SentAt=?" +
-                                "WHERE ID=?";
+            Messages m = entity as Messages;
+            if (m == null) return;
 
-                cmd.CommandText = sqlStr;
-                cmd.Parameters.Clear();
-
-                // 1. Text fields
-                cmd.Parameters.Add("@cMatchID", OleDbType.Integer).Value = c.Match.Id;
-
-                // 2. Numeric fields (Ensure these are integers in Access)
-                cmd.Parameters.Add("@cSenderID", OleDbType.Integer).Value = c.Sender.Id;
-
-                cmd.Parameters.Add("@cMessageText", OleDbType.VarWChar).Value = c.MessageText;
-                cmd.Parameters.Add("@cSentAt", OleDbType.Date).Value = c.SentAt;
-
-                // 9. WHERE ID (Integer)
-                cmd.Parameters.Add("@id", OleDbType.Integer).Value = c.Id;
-            }
+            cmd.CommandText = "UPDATE Messages SET MatchID = ?, SenderID = ?, MessageText = ?, SentAt = ? WHERE ID = ?";
+            cmd.Parameters.Clear();
+            cmd.Parameters.AddWithValue("?", m.Match.Id);
+            cmd.Parameters.AddWithValue("?", m.Sender.Id);
+            cmd.Parameters.AddWithValue("?", m.MessageText);
+            cmd.Parameters.AddWithValue("?", m.SentAt);
+            cmd.Parameters.AddWithValue("?", m.Id);
         }
     }
 }
