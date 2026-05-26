@@ -87,7 +87,8 @@ namespace ApiSelect.Controllers
             PhotosList photos = dB.SelectAll();
             return photos;
         }
-        [HttpGet("PreferencesSelector")]
+        [HttpGet("{userId}")]
+        [ActionName("PreferencesSelector")]
         public IActionResult PreferencesSelector(int userId)
         {
             // 1. Instantiate the DB class properly to access non-static methods
@@ -106,7 +107,7 @@ namespace ApiSelect.Controllers
                 return NotFound($"No preferences found for user {userId}");
             }
 
-            return Ok(prefs);
+            return Ok(prefs); 
         }
 
         [HttpGet]
@@ -134,18 +135,24 @@ namespace ApiSelect.Controllers
             return Ok(user);
         }
 
-        [HttpGet("GetDiscoveryFeed")]
-        public IActionResult GetDiscoveryFeed(int currentUserId, int preferredGenderId, int minAge, int maxAge, int maxDistance)
+        [HttpPost]
+        [ActionName("GetDiscoveryFeed")]
+        public IActionResult GetDiscoveryFeed([FromBody] DiscoveryFeedDTO discoveryFeedDTO)
         {
+            if (discoveryFeedDTO == null || discoveryFeedDTO.Preferences == null)
+            {
+                return BadRequest($"Invalid request parameters. discoveryFeedDTO:{discoveryFeedDTO},discoveryFeedDTO.Preferences: {discoveryFeedDTO?.Preferences} ");
+            }
+
             try
             {
                 ViewModel.UserDB db = new ViewModel.UserDB();
                 List<ModelDates.User> discoveryQueue = db.SelectFilteredDiscovery(
-                    currentUserId,
-                    preferredGenderId,
-                    minAge,
-                    maxAge,
-                    maxDistance
+                    discoveryFeedDTO.UserId,
+                    discoveryFeedDTO.Preferences.PreferredGender.Id,
+                    discoveryFeedDTO.Preferences.AgeMin,
+                    discoveryFeedDTO.Preferences.AgeMax,
+                    discoveryFeedDTO.Preferences.DistanceMax
                 );
 
                 return Ok(discoveryQueue);
