@@ -62,6 +62,15 @@ namespace ApiSelect.Controllers
             MatchesList matches = dB.SelectAll();
             return matches;
         }
+        [HttpGet("GetMatchesForUser/{userId}")]
+        public IActionResult GetMatchesForUser(int userId)
+        {
+            MatchesDB db = new MatchesDB();
+            // You need to add this method 'GetMatchesByUserId' to your MatchesDB class
+            // It should return only the matches where User1 == userId OR User2 == userId
+            var matches = db.GetMatchesForUser(userId);
+            return Ok(matches);
+        }
         [HttpGet]
         [ActionName("MessagesSelector")]
         public MessagesList SelectAllMessages()
@@ -108,6 +117,23 @@ namespace ApiSelect.Controllers
         return users; 
         }
 
+        [HttpGet("GetUser/{id}")]
+        public IActionResult GetUser(int id)
+        {
+            // Use your existing DB helper class instead of _context
+            UserDB db = new UserDB();
+
+            // Call the method that finds a user by ID
+            // Note: You might need to check your UserDB.cs to see if 
+            // it has a 'SelectById' method. If not, you can filter the list:
+            var user = db.SelectAll().FirstOrDefault(u => u.Id == id);
+
+            if (user == null)
+                return NotFound();
+
+            return Ok(user);
+        }
+
         [HttpGet("GetDiscoveryFeed")]
         public IActionResult GetDiscoveryFeed(int currentUserId, int preferredGenderId, int minAge, int maxAge, int maxDistance)
         {
@@ -128,6 +154,13 @@ namespace ApiSelect.Controllers
             {
                 return StatusCode(500, $"Internal server error: {ex.Message}");
             }
+        }
+
+        [HttpGet("GetMessages/{matchId}")]
+        public IActionResult GetMessages(int matchId)
+        {
+            MessagesDB db = new MessagesDB();
+            return Ok(db.GetMessagesByMatchId(matchId));
         }
         [HttpPost]
         public int InsertACity([FromBody] City city)
@@ -155,13 +188,35 @@ namespace ApiSelect.Controllers
             int x = db.SaveChanges();
             return x;
         }
-        [HttpPost]
-        public int InsertALikes([FromBody] Likes likes)
+        [HttpPost("LikeUser")]
+        public IActionResult LikeUser(int likerId, int likedId)
         {
-            LikesDB db = new LikesDB();
-            db.Insert(likes);
-            int x = db.SaveChanges();
-            return x;
+            LikesDB likesDb = new LikesDB();
+
+            // 1. Add the new like
+            Likes newLike = new Likes
+            {
+                Liker = new User { Id = likerId },
+                LikedUser = new User { Id = likedId }
+            };
+            likesDb.Insert(newLike);
+            likesDb.SaveChanges(); // Make sure to save the changes to the database
+
+            // 2. Check for match: Did the 'likedId' person already like 'likerId'?
+            bool isMatch = likesDb.HasLiked(likedId, likerId);
+
+            if (isMatch)
+            {
+                // 3. Add to Matches table
+                MatchesDB matchDb = new MatchesDB();
+                // Assuming your Matches entity has properties like User1 and User2
+                matchDb.Insert(new Matches { User1 = new User { Id = likerId }, User2 = new User { Id = likedId } });
+                matchDb.SaveChanges();
+
+                return Ok(new { matchFound = true });
+            }
+
+            return Ok(new { matchFound = false });
         }
         [HttpPost]
         public int InsertAManager([FromBody] Manager manager)
@@ -179,13 +234,27 @@ namespace ApiSelect.Controllers
             int x = db.SaveChanges();
             return x;
         }
-        [HttpPost]
-        public int InsertAMessages([FromBody] Messages messages)
+        [HttpPost("SendMessage")]
+        public IActionResult SendMessage([FromBody] Messages messages)
         {
+            // 1. Set the timestamp here on the server side
+            // This ensures consistency instead of relying on the client's clock
+            messages.SentAt = DateTime.Now;
+
+            // 2. Perform the insertion
             MessagesDB db = new MessagesDB();
             db.Insert(messages);
-            int x = db.SaveChanges();
-            return x;
+            int result = db.SaveChanges();
+
+            // 3. Return a standard response
+            if (result > 0)
+            {
+                return Ok(new { success = true });
+            }
+            else
+            {
+                return BadRequest("Failed to send message.");
+            }
         }
         [HttpPost]
         public int InsertAPhotos([FromBody] Photos photos)
@@ -443,17 +512,20 @@ namespace ApiSelect.Controllers
             db.Delete(pref);
             return db.SaveChanges();
         }
-        [HttpDelete]
-        [ActionName("DeleteUser")]
-        public int DeleteUser(int id)
+        [HttpDelete("DeleteUser/{id}")]
+        public IActionResult DeleteUser(int id)
         {
+            // 1. Find the user first
             User user = UserDB.SelectById(id);
             if (user == null)
-                return 0;
+                return NotFound(new { message = "User not found" });
 
+            // 2. Perform the deletion
             UserDB db = new UserDB();
             db.Delete(user);
-            return db.SaveChanges();
+            db.SaveChanges(); // Ensure this is called to commit the change
+
+            return Ok(new { message = "User deleted successfully" });
         }
 
 

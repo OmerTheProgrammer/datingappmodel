@@ -83,5 +83,14 @@ namespace ViewModel
             cmd.Parameters.AddWithValue("?", m.SentAt);
             cmd.Parameters.AddWithValue("?", m.Id);
         }
+        public List<Messages> GetMessagesByMatchId(int matchId)
+        {
+            // Fetches only the messages belonging to a specific conversation
+            string sql = "SELECT * FROM Messages WHERE MatchID = ? ORDER BY SentAt ASC";
+
+            // You will need to use the parameterized Select overload we created earlier
+            var messages = base.Select(sql, matchId);
+            return new MessagesList(messages);
+        }
     }
 }

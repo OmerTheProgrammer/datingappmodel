@@ -7,14 +7,13 @@ using System.Threading.Tasks;
 
 namespace ModelDates
 {
-    public class Messages : BaseEntity
+    public partial class Messages : BaseEntity // Added 'partial' here
     {
-    
         public Matches Match { get; set; }
-      
         public User Sender { get; set; }
+        public int MatchId { get; set; }
+        public int SenderId { get; set; }
         public string MessageText { get; set; }
         public DateTime SentAt { get; set; } = DateTime.UtcNow;
-
     }
 }

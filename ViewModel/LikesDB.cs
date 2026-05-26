@@ -73,5 +73,23 @@ namespace ViewModel
             cmd.Parameters.AddWithValue("?", l.LikedUser.Id);
             cmd.Parameters.AddWithValue("?", l.Id);
         }
+        public bool HasLiked(int likerId, int likedId)
+        {
+            // Check if there is a record where Liker is the person we're checking, 
+            // and the person liked is the one we're interested in.
+            string sql = "SELECT COUNT(*) FROM Likes WHERE LikerID = ? AND LikedID = ?";
+
+            using (OleDbCommand cmd = new OleDbCommand(sql, connection))
+            {
+                cmd.Parameters.AddWithValue("?", likerId);
+                cmd.Parameters.AddWithValue("?", likedId);
+
+                // Open connection if it's closed
+                if (connection.State != ConnectionState.Open) connection.Open();
+
+                int count = (int)cmd.ExecuteScalar();
+                return count > 0;
+            }
+        }
     }
 }

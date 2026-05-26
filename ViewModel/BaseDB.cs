@@ -45,6 +45,11 @@ namespace ViewModel
                 using (OleDbCommand cmd = connection.CreateCommand())
                 {
                     cmd.Transaction = trans;
+                    System.Diagnostics.Debug.WriteLine("--- SENDING DATABASE INSERT ---");
+                    foreach (OleDbParameter param in cmd.Parameters)
+                    {
+                        System.Diagnostics.Debug.WriteLine($"Parameter Value: {param.Value} | Type: {param.Value?.GetType().Name ?? "NULL"}");
+                    }
                     foreach (var item in inserted) { cmd.Parameters.Clear(); item.CreateSqlAction(item.Entity, cmd); records_affected += cmd.ExecuteNonQuery(); }
                     foreach (var item in updated) { cmd.Parameters.Clear(); item.CreateSqlAction(item.Entity, cmd); records_affected += cmd.ExecuteNonQuery(); }
                     foreach (var item in deleted) { cmd.Parameters.Clear(); item.CreateSqlAction(item.Entity, cmd); records_affected += cmd.ExecuteNonQuery(); }
@@ -67,6 +72,32 @@ namespace ViewModel
                 {
                     BaseEntity entity = NewEntity();
                     list.Add(CreateModel(entity, localReader));
+                }
+            }
+            return list;
+        }
+        // Add this new overload to BaseDB.cs
+        public List<BaseEntity> Select(string sql, params object[] parameters)
+        {
+            List<BaseEntity> list = new List<BaseEntity>();
+            using (OleDbCommand cmd = new OleDbCommand(sql, connection))
+            {
+                // Add the parameters to the command
+                foreach (var param in parameters)
+                {
+                    cmd.Parameters.AddWithValue("?", param);
+                }
+
+                if (connection.State != ConnectionState.Open) connection.Open();
+
+                using (OleDbDataReader reader = cmd.ExecuteReader())
+                {
+                    while (reader.Read())
+                    {
+                        // Assuming NewEntity() and CreateModel() are already in BaseDB
+                        BaseEntity entity = NewEntity();
+                        list.Add(CreateModel(entity, reader));
+                    }
                 }
             }
             return list;

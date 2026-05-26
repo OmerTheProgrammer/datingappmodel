@@ -73,5 +73,12 @@ namespace ViewModel
             cmd.Parameters.AddWithValue("?", m.User2.Id);
             cmd.Parameters.AddWithValue("?", m.Id);
         }
+        public List<Matches> GetMatchesForUser(int userId)
+        {
+            // Fetches all matches where the user is either User1 or User2
+            string sql = "SELECT * FROM Matches WHERE User1ID = ? OR User2ID = ?";
+            var allMatches = base.Select(sql, userId, userId);
+            return new MatchesList(allMatches);
+        }
     }
 }

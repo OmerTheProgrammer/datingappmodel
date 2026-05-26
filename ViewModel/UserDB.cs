@@ -78,17 +78,21 @@ namespace ViewModel
         {
             User p = entity as User;
             if (p == null) return;
+
             cmd.CommandText = "INSERT INTO [User] (Username, Email, [Password], Gender, DateOfBirth, City, Bio, ProfilePic, CreatedAt, Age) VALUES (?,?,?,?,?,?,?,?,?,?)";
-            cmd.Parameters.AddWithValue("?", p.Username);
-            cmd.Parameters.AddWithValue("?", p.Email);
-            cmd.Parameters.AddWithValue("?", p.Password);
-            cmd.Parameters.AddWithValue("?", p.Gender.Id);
-            cmd.Parameters.AddWithValue("?", p.DateOfBirth);
-            cmd.Parameters.AddWithValue("?", p.City.Id);
-            cmd.Parameters.AddWithValue("?", p.Bio ?? (object)DBNull.Value);
-            cmd.Parameters.AddWithValue("?", p.Profilepic ?? (object)DBNull.Value);
-            cmd.Parameters.AddWithValue("?", p.CreatedAt);
-            cmd.Parameters.AddWithValue("?", p.Age);
+            cmd.Parameters.Clear();
+
+            // Helper to add parameters with explicit types to stop "Data type mismatch"
+            cmd.Parameters.Add("@p1", OleDbType.VarWChar).Value = (object)p.Username ?? DBNull.Value;
+            cmd.Parameters.Add("@p2", OleDbType.VarWChar).Value = (object)p.Email ?? DBNull.Value;
+            cmd.Parameters.Add("@p3", OleDbType.VarWChar).Value = (object)p.Password ?? DBNull.Value;
+            cmd.Parameters.Add("@p4", OleDbType.Integer).Value = p.Gender != null ? (object)p.Gender.Id : DBNull.Value;
+            cmd.Parameters.Add("@p5", OleDbType.Date).Value = p.DateOfBirth > DateTime.MinValue ? (object)p.DateOfBirth : DBNull.Value;
+            cmd.Parameters.Add("@p6", OleDbType.Integer).Value = p.City != null ? (object)p.City.Id : DBNull.Value;
+            cmd.Parameters.Add("@p7", OleDbType.LongVarWChar).Value = (object)p.Bio ?? DBNull.Value;
+            cmd.Parameters.Add("@p8", OleDbType.LongVarWChar).Value = (object)p.Profilepic ?? DBNull.Value;
+            cmd.Parameters.Add("@p9", OleDbType.Date).Value = p.CreatedAt > DateTime.MinValue ? (object)p.CreatedAt : DateTime.Now;
+            cmd.Parameters.Add("@p10", OleDbType.Integer).Value = (object)p.Age;
         }
 
         protected override void CreateUpdatedSQL(BaseEntity entity, OleDbCommand cmd)
